@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
 function App() {
+	const [name, setName] = useState('');
 	const [startDate, setStartDate] = useState('');
 	const [endDate, setEndDate] = useState('');
 	const [amount, setAmount] = useState('');
@@ -22,10 +23,8 @@ function App() {
 
 	useEffect(() => {
 		setEndDate(getDate(new Date()));
-		const savedHistory = localStorage.getItem('interestHistory');
-		if (savedHistory) {
-			setHistory(JSON.parse(savedHistory));
-		}
+		localStorage.setItem('interestHistory', JSON.stringify([])); // Clear saved history on reload
+		setHistory([]); // Start fresh every time
 	}, []);
 
 	const calcDays = () => {
@@ -44,15 +43,16 @@ function App() {
 	};
 
 	const addToHistory = () => {
-		if (!amount || !interestRate || !startDate || !endDate) {
+		if (!name || !amount || !interestRate || !startDate || !endDate) {
 			alert('Please enter all the details!');
-			return; // Don't add to history if required details are missing
+			return;
 		}
 
 		const formattedStart = format(new Date(startDate), 'dd/MM/yyyy');
 		const formattedEnd = format(new Date(endDate), 'dd/MM/yyyy');
 
 		const newEntry = {
+			Name: name,
 			Amount: amount,
 			'Interest Rate': interestRate,
 			'Start Date': formattedStart,
@@ -66,11 +66,11 @@ function App() {
 	};
 
 	const handleCalculate = () => {
-		setDays("")
-		setCalculatedInterest("")
-		setAmount("");
-		setStartDate("")
 		addToHistory();
+		setAmount('');
+		setStartDate('');
+		setDays('');
+		setCalculatedInterest('');
 	};
 
 	useEffect(() => {
@@ -81,7 +81,6 @@ function App() {
 		calcInterest();
 	}, [amount, interestRate, days]);
 
-	// useEffect to save history to localStorage when history changes
 	useEffect(() => {
 		if (history.length > 0) {
 			localStorage.setItem('interestHistory', JSON.stringify(history));
@@ -89,7 +88,29 @@ function App() {
 	}, [history]);
 
 	const exportToExcel = () => {
-		const ws = XLSX.utils.json_to_sheet(history);
+		if (history.length === 0) {
+			alert("No entries saved!")
+			return
+		};
+
+		const wsData = [...history.map(entry => ({ ...entry }))];
+
+		const totalInterest = history.reduce(
+			(sum, entry) => sum + parseFloat(entry['Calculated Interest']),
+			0
+		);
+
+		wsData.push({
+			Name: 'Total',
+			Amount: '',
+			'Interest Rate': '',
+			'Start Date': '',
+			'End Date': '',
+			'No of Days': '',
+			'Calculated Interest': totalInterest.toFixed(2),
+		});
+
+		const ws = XLSX.utils.json_to_sheet(wsData);
 		const wb = XLSX.utils.book_new();
 		XLSX.utils.book_append_sheet(wb, ws, 'Interest History');
 		const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -98,15 +119,16 @@ function App() {
 	};
 
 	const handleReset = () => {
-		setAmount("");
-		setCalculatedInterest("");
-		setDays("");
-		setEndDate("");
-		setStartDate("");
-		setHistory([]); 
-		localStorage.setItem("interestHistory", JSON.stringify([]));
+		setName('');
+		setAmount('');
+		setInterestRate('');
+		setCalculatedInterest('');
+		setDays('');
+		setEndDate('');
+		setStartDate('');
+		setHistory([]);
+		localStorage.setItem('interestHistory', JSON.stringify([]));
 	};
-	
 
 	return (
 		<div className='min-h-screen bg-gray-100 flex items-center justify-center p-6'>
@@ -117,12 +139,22 @@ function App() {
 
 				<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 					<div className='bg-gray-50 rounded-xl p-6 shadow-sm'>
-						<h2 className='text-lg font-medium mb-4'>Financial Info</h2>
+						<h2 className='text-lg font-medium mb-4'>Personal & Financial Info</h2>
 						<div className='space-y-4'>
 							<div>
-								<label
-									htmlFor='amount'
-									className='block text-sm font-medium text-gray-700'>
+								<label htmlFor='name' className='block text-sm font-medium text-gray-700'>
+									Name
+								</label>
+								<input
+									type='text'
+									id='name'
+									className='mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md'
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+								/>
+							</div>
+							<div>
+								<label htmlFor='amount' className='block text-sm font-medium text-gray-700'>
 									Amount
 								</label>
 								<input
@@ -134,9 +166,7 @@ function App() {
 								/>
 							</div>
 							<div>
-								<label
-									htmlFor='interest_rate'
-									className='block text-sm font-medium text-gray-700'>
+								<label htmlFor='interest_rate' className='block text-sm font-medium text-gray-700'>
 									Interest Rate (%)
 								</label>
 								<input
@@ -154,9 +184,7 @@ function App() {
 						<h2 className='text-lg font-medium mb-4'>Date Info</h2>
 						<div className='space-y-4'>
 							<div>
-								<label
-									htmlFor='start_date'
-									className='block text-sm font-medium text-gray-700'>
+								<label htmlFor='start_date' className='block text-sm font-medium text-gray-700'>
 									Start Date
 								</label>
 								<input
@@ -168,9 +196,7 @@ function App() {
 								/>
 							</div>
 							<div>
-								<label
-									htmlFor='end_date'
-									className='block text-sm font-medium text-gray-700'>
+								<label htmlFor='end_date' className='block text-sm font-medium text-gray-700'>
 									End Date
 								</label>
 								<input
@@ -185,31 +211,29 @@ function App() {
 					</div>
 				</div>
 
-				{/* Results */}
-				<div className='bg-gray-50 rounded-xl p-6 shadow-sm space-y-4'>
+				<div className='bg-gray-200 rounded-xl p-6 shadow-sm space-y-4'>
 					<div className='text-sm text-gray-700'>
-						Number of Days: <strong>{days} {days.length && "days"}</strong>
+						Number of Days: <strong>{days} {days.length && 'days'}</strong>
 					</div>
 					<div className='text-sm text-gray-700'>
 						Calculated Interest: <strong>₹{calculatedInterest}</strong>
 					</div>
 					<button
 						onClick={handleCalculate}
-						className=' bg-slate-900 text-white px-6 py-2 rounded-md hover:bg-green-600'>
-						Calculate & Save
+						className='bg-slate-800 cursor-pointer text-white px-6 py-2 rounded-md hover:bg-slate-950'>
+						Save
 					</button>
 				</div>
 
-				{/* Buttons */}
 				<div className='flex gap-4 justify-center print:hidden'>
 					<button
 						onClick={exportToExcel}
-						className='bg-green-900 text-white px-6 py-2 rounded-md hover:bg-blue-600'>
+						className='bg-green-800 cursor-pointer text-white px-6 py-2 rounded-md hover:bg-green-900'>
 						Export to Excel
 					</button>
 					<button
 						onClick={handleReset}
-						className='bg-red-900 text-white px-6 py-2 rounded-md hover:bg-blue-600'>
+						className='bg-red-800 text-white px-6 py-2 rounded-md hover:bg-red-900 cursor-pointer'>
 						Reset
 					</button>
 				</div>

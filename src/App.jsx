@@ -228,12 +228,12 @@ function App() {
 				<div className='flex gap-4 justify-center print:hidden'>
 					<button
 						onClick={exportToExcel}
-						className='bg-green-800 cursor-pointer text-white px-6 py-2 rounded-md hover:bg-green-900'>
+						className='bg-green-800 cursor-pointer text-white px-3 py-2 rounded-md hover:bg-green-900'>
 						Export to Excel
 					</button>
 					<button
 						onClick={handleReset}
-						className='bg-red-800 text-white px-6 py-2 rounded-md hover:bg-red-900 cursor-pointer'>
+						className='bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-900 cursor-pointer'>
 						Reset
 					</button>
 				</div>

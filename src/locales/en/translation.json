@@ -1,0 +1,18 @@
+{
+	"title": "Interest Calculator",
+	"personalInfo": "Personal & Financial Info",
+	"name": "Name",
+	"amount": "Amount",
+	"interestRate": "Interest Rate (%)",
+	"dateInfo": "Date Info",
+	"startDate": "Start Date",
+	"endDate": "End Date",
+	"numDays": "Number of Days",
+	"calcInterest": "Calculated Interest",
+	"save": "Save",
+	"export": "Export to Excel",
+	"reset": "Reset",
+	"alertFillAll": "Please enter all the details!",
+	"alertNoEntries": "No entries saved!",
+	"total": "Total"
+}
